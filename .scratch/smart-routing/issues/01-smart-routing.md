@@ -1,6 +1,6 @@
 # 01 智能路由（auto 模型）完整实现
 
-Status: ready-for-agent
+Status: claimed
 详情见 `../spec.md`；决策见 `docs/adr/0001-smart-routing-external-decision-model.md`。
 
 ## 内容

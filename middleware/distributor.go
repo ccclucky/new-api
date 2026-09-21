@@ -20,6 +20,7 @@ import (
 	"github.com/QuantumNous/new-api/relaykit/dto"
 	"github.com/QuantumNous/new-api/relaykit/types"
 	"github.com/QuantumNous/new-api/service"
+	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/QuantumNous/new-api/setting/ratio_setting"
 
 	"github.com/gin-gonic/gin"
@@ -52,6 +53,19 @@ func Distribute() func(c *gin.Context) {
 		}
 		_, pinned, _ := constraints.ResolvedPin()
 		if !pinned {
+			smartRouting := operation_setting.GetSmartRoutingSetting()
+			if smartRouting.Enabled && modelRequest.Model == smartRouting.VirtualName() {
+				// 智能路由 v1 仅覆盖 chat completions 与 messages 协议
+				if !strings.Contains(c.Request.URL.Path, "/chat/completions") && !strings.Contains(c.Request.URL.Path, "/messages") {
+					abortWithOpenAiMessage(c, http.StatusBadRequest, i18n.T(c, i18n.MsgDistributorSmartRoutingUnsupportedEndpoint))
+					return
+				}
+				if err := resolveSmartRoutingModel(c, modelRequest); err != nil {
+					logger.LogWarn(c, "smart_routing event=resolve_failed error=%q", err.Error())
+					abortWithOpenAiMessage(c, http.StatusInternalServerError, i18n.T(c, i18n.MsgDistributorSmartRoutingFailed))
+					return
+				}
+			}
 			// Select a channel for the user
 			// check token model mapping
 			modelLimitEnable := common.GetContextKeyBool(c, constant.ContextKeyTokenModelLimitEnabled)

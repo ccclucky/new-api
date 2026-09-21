@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -260,6 +261,14 @@ func ListModels(c *gin.Context, modelType int) {
 			continue
 		}
 		userModelNames = append(userModelNames, modelName)
+	}
+	// 智能路由开启时向客户端暴露虚拟模型名；定价跟随实际命中的模型。
+	if smartRouting := operation_setting.GetSmartRoutingSetting(); smartRouting.Enabled {
+		virtualName := smartRouting.VirtualName()
+		limited := modelLimitEnable && !tokenModelLimit[virtualName] && !tokenModelLimit[ratio_setting.RoutingMatchModelName(virtualName)]
+		if !limited && !slices.Contains(userModelNames, virtualName) {
+			userModelNames = append(userModelNames, virtualName)
+		}
 	}
 
 	ownerByModel := map[string]string{}
