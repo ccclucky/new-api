@@ -14,3 +14,17 @@ Rules:
 - After reading, follow every rule in `AGENTS.md` for the rest of the work.
 - If the task touches `web/`, also Read `web/AGENTS.md` before editing frontend files.
 - If the task touches billing as defined under **Billing rules (mandatory read gate)** in `AGENTS.md`, also Read `.agents/rules/billing.md` in full before planning or editing. Tasks outside that definition may skip it.
+
+## Agent skills
+
+### Issue tracker
+
+议题以本地 markdown 记录在 `.scratch/<feature>/` 下。See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+默认五个标签：`needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix`。See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+单上下文：仓库根目录 `CONTEXT.md` + `docs/adr/`。See `docs/agents/domain.md`.
