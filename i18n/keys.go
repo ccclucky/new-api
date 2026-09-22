@@ -335,6 +335,11 @@ const (
 	MsgDistributorSmartRoutingFailed              = "distributor.smart_routing_failed"
 )
 
+// Pricing page related messages
+const (
+	MsgPricingSmartRoutingDescription = "pricing.smart_routing_description"
+)
+
 // Custom OAuth provider related messages
 const (
 	MsgCustomOAuthNotFound          = "custom_oauth.not_found"

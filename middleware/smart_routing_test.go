@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/constant"
@@ -23,6 +22,7 @@ import (
 func newSmartRoutingContext(body string) *gin.Context {
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
 	return c
 }
 
@@ -55,32 +55,32 @@ func setupSmartRoutingTestDB(t *testing.T, abilities []model.Ability) {
 	})
 }
 
-func useSmartRoutingSettings(t *testing.T, settings operation_setting.SmartRoutingSetting) {
+func useSmartRoutingSettings(t *testing.T, settings operation_setting.AutoRoutingSetting) {
 	t.Helper()
-	current := operation_setting.GetSmartRoutingSetting()
+	current := operation_setting.GetAutoRoutingSetting()
 	previous := *current
 	t.Cleanup(func() { *current = previous })
 	*current = settings
 }
 
-func TestMatchSmartRoutingAnswer(t *testing.T) {
+func mustSmartRoutingDecision(t *testing.T, c *gin.Context) smartRoutingDecision {
+	t.Helper()
+	value, ok := common.GetContextKey(c, constant.ContextKeySmartRoutingDecision)
+	require.True(t, ok)
+	decision, valid := value.(smartRoutingDecision)
+	require.True(t, valid)
+	return decision
+}
+
+func TestMatchSmartRoutingPoolAnswer(t *testing.T) {
 	pool := []string{"gpt-5.1", "claude-sonnet-4.5", "gemini-3-pro"}
 
-	got, ok := matchSmartRoutingAnswer("claude-sonnet-4.5", pool)
-	assert.True(t, ok)
-	assert.Equal(t, "claude-sonnet-4.5", got)
-
-	_, ok = matchSmartRoutingAnswer("", pool)
-	assert.False(t, ok)
-
-	_, ok = matchSmartRoutingAnswer("gpt-4.1", pool)
-	assert.False(t, ok)
-
-	// A wildcard pool entry matches through routing normalization, like
-	// channel selection does.
-	got, ok = matchSmartRoutingAnswer("gpt-4-gizmo-g5-7", []string{"gpt-4-gizmo-*"})
-	assert.True(t, ok)
-	assert.Equal(t, "gpt-4-gizmo-*", got)
+	assert.True(t, matchSmartRoutingPoolAnswer("claude-sonnet-4.5", pool))
+	assert.False(t, matchSmartRoutingPoolAnswer("", pool))
+	assert.False(t, matchSmartRoutingPoolAnswer("gpt-4.1", pool))
+	// The closed choice set is exact: alias-normalized matches are rejected
+	// so an out-of-pool answer falls back instead of silently widening scope.
+	assert.False(t, matchSmartRoutingPoolAnswer("gpt-4-gizmo-g5-7", []string{"gpt-4-gizmo-*"}))
 }
 
 func TestSmartRoutingCandidatePool(t *testing.T) {
@@ -130,9 +130,9 @@ func TestSmartRoutingStateExtraction(t *testing.T) {
 	})
 
 	t.Run("truncated to max chars", func(t *testing.T) {
-		long := strings.Repeat("a", operation_setting.SmartRoutingStateMaxChars+100)
+		long := strings.Repeat("a", operation_setting.AutoRoutingStateMaxChars+100)
 		body := `{"model":"auto","messages":[{"role":"user","content":"` + long + `"}]}`
-		assert.Len(t, smartRoutingState(newSmartRoutingContext(body)), operation_setting.SmartRoutingStateMaxChars)
+		assert.Len(t, smartRoutingState(newSmartRoutingContext(body)), operation_setting.AutoRoutingStateMaxChars)
 	})
 
 	t.Run("missing messages yields empty", func(t *testing.T) {
@@ -160,7 +160,7 @@ func TestRewriteRequestBodyModel(t *testing.T) {
 }
 
 func TestAskJevSystemOne(t *testing.T) {
-	t.Run("returns choice and concrete model version", func(t *testing.T) {
+	t.Run("returns choice, version and usage", func(t *testing.T) {
 		var gotAuth string
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			gotAuth = r.Header.Get("Authorization")
@@ -175,15 +175,17 @@ func TestAskJevSystemOne(t *testing.T) {
 			require.True(t, ok)
 			assert.Len(t, criteria, 2)
 			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"model":"jev-1.13.0","answers":{"model":{"type":"choice","choice":"gpt-5.1"}}}`))
+			_, _ = w.Write([]byte(`{"model":"jev-1.13.0","answers":{"model":{"type":"choice","choice":"gpt-5.1"}},"usage":{"input_tokens":296,"output_tokens":20}}`))
 		}))
 		defer server.Close()
 
-		setting := &operation_setting.SmartRoutingSetting{BaseURL: server.URL, ApiKey: "sk-test", TimeoutMs: 1000}
-		answer, jevModel, err := askJevSystemOne(newSmartRoutingContext(`{"model":"auto"}`), setting, []string{"gpt-5.1", "claude-sonnet-4.5"}, "hello")
+		setting := &operation_setting.AutoRoutingSetting{BaseURL: server.URL, ApiKey: "sk-test", TimeoutMs: 1000}
+		c := newSmartRoutingContext(`{"model":"auto"}`)
+		answer, jevModel, usage, err := askJevSystemOne(c, setting, []string{"gpt-5.1", "claude-sonnet-4.5"}, "hello")
 		require.NoError(t, err)
 		assert.Equal(t, "gpt-5.1", answer)
 		assert.Equal(t, "jev-1.13.0", jevModel)
+		assert.Equal(t, 296, usage.InputTokens)
 		assert.Equal(t, "Bearer sk-test", gotAuth)
 	})
 
@@ -194,19 +196,25 @@ func TestAskJevSystemOne(t *testing.T) {
 		}))
 		defer server.Close()
 
-		setting := &operation_setting.SmartRoutingSetting{BaseURL: server.URL, ApiKey: "bad", TimeoutMs: 1000}
-		_, _, err := askJevSystemOne(newSmartRoutingContext(`{"model":"auto"}`), setting, []string{"m"}, "hi")
+		setting := &operation_setting.AutoRoutingSetting{BaseURL: server.URL, ApiKey: "bad", TimeoutMs: 1000}
+		_, _, _, err := askJevSystemOne(newSmartRoutingContext(`{"model":"auto"}`), setting, []string{"m"}, "hi")
 		require.ErrorContains(t, err, "401")
 	})
 
-	t.Run("slow classifier exceeds timeout", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			time.Sleep(80 * time.Millisecond)
+	t.Run("unresponsive classifier exceeds timeout", func(t *testing.T) {
+		release := make(chan struct{})
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			select {
+			case <-release:
+			case <-r.Context().Done():
+			}
 		}))
-		defer server.Close()
+		defer server.Close() // runs after the release close below (LIFO)
+		defer close(release)
 
-		setting := &operation_setting.SmartRoutingSetting{BaseURL: server.URL, ApiKey: "k", TimeoutMs: 10}
-		_, _, err := askJevSystemOne(newSmartRoutingContext(`{"model":"auto"}`), setting, []string{"m"}, "hi")
+		setting := &operation_setting.AutoRoutingSetting{BaseURL: server.URL, ApiKey: "k", TimeoutMs: 10}
+		c := newSmartRoutingContext(`{"model":"auto"}`)
+		_, _, _, err := askJevSystemOne(c, setting, []string{"m"}, "hi")
 		require.Error(t, err)
 	})
 }
@@ -221,11 +229,11 @@ func TestResolveSmartRoutingModel(t *testing.T) {
 	t.Run("classifier answer rewrites request", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"model":"jev-1.13.0","answers":{"model":{"type":"choice","choice":"claude-sonnet-4.5"}}}`))
+			_, _ = w.Write([]byte(`{"model":"jev-1.13.0","answers":{"model":{"type":"choice","choice":"claude-sonnet-4.5"}},"usage":{"input_tokens":42}}`))
 		}))
 		defer server.Close()
 		setupSmartRoutingTestDB(t, abilities)
-		useSmartRoutingSettings(t, operation_setting.SmartRoutingSetting{
+		useSmartRoutingSettings(t, operation_setting.AutoRoutingSetting{
 			Enabled: true, VirtualModel: "auto", BaseURL: server.URL, ApiKey: "k", FallbackModel: "gpt-5.1", TimeoutMs: 1000,
 		})
 
@@ -234,9 +242,9 @@ func TestResolveSmartRoutingModel(t *testing.T) {
 		mr := &ModelRequest{Model: "auto"}
 		require.NoError(t, resolveSmartRoutingModel(c, mr))
 		assert.Equal(t, "claude-sonnet-4.5", mr.Model)
-		decision, exists := c.Get("smart_routing")
-		require.True(t, exists)
-		assert.Equal(t, "jev", decision.(smartRoutingDecision).ChosenBy)
+		decision := mustSmartRoutingDecision(t, c)
+		assert.Equal(t, "jev", decision.ChosenBy)
+		assert.Equal(t, 42, decision.JevUsage.InputTokens)
 	})
 
 	t.Run("answer outside pool falls back", func(t *testing.T) {
@@ -245,7 +253,7 @@ func TestResolveSmartRoutingModel(t *testing.T) {
 		}))
 		defer server.Close()
 		setupSmartRoutingTestDB(t, abilities)
-		useSmartRoutingSettings(t, operation_setting.SmartRoutingSetting{
+		useSmartRoutingSettings(t, operation_setting.AutoRoutingSetting{
 			Enabled: true, VirtualModel: "auto", BaseURL: server.URL, ApiKey: "k", FallbackModel: "gpt-5.1", TimeoutMs: 1000,
 		})
 
@@ -254,7 +262,7 @@ func TestResolveSmartRoutingModel(t *testing.T) {
 		mr := &ModelRequest{Model: "auto"}
 		require.NoError(t, resolveSmartRoutingModel(c, mr))
 		assert.Equal(t, "gpt-5.1", mr.Model)
-		decision := mustDecision(t, c)
+		decision := mustSmartRoutingDecision(t, c)
 		assert.Equal(t, "fallback", decision.ChosenBy)
 		assert.Contains(t, decision.Reason, "not in pool")
 	})
@@ -265,7 +273,7 @@ func TestResolveSmartRoutingModel(t *testing.T) {
 		}))
 		defer server.Close()
 		setupSmartRoutingTestDB(t, abilities)
-		useSmartRoutingSettings(t, operation_setting.SmartRoutingSetting{
+		useSmartRoutingSettings(t, operation_setting.AutoRoutingSetting{
 			Enabled: true, VirtualModel: "auto", BaseURL: server.URL, ApiKey: "k", FallbackModel: "claude-sonnet-4.5", TimeoutMs: 1000,
 		})
 
@@ -274,12 +282,33 @@ func TestResolveSmartRoutingModel(t *testing.T) {
 		mr := &ModelRequest{Model: "auto"}
 		require.NoError(t, resolveSmartRoutingModel(c, mr))
 		assert.Equal(t, "claude-sonnet-4.5", mr.Model)
-		assert.Equal(t, "fallback", mustDecision(t, c).ChosenBy)
+		assert.Equal(t, "fallback", mustSmartRoutingDecision(t, c).ChosenBy)
+	})
+
+	t.Run("fallback must satisfy the token allowlist", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+		}))
+		defer server.Close()
+		setupSmartRoutingTestDB(t, abilities)
+		useSmartRoutingSettings(t, operation_setting.AutoRoutingSetting{
+			Enabled: true, VirtualModel: "auto", BaseURL: server.URL, ApiKey: "k", FallbackModel: "gpt-5.1", TimeoutMs: 1000,
+		})
+
+		c := newSmartRoutingContext(body)
+		common.SetContextKey(c, constant.ContextKeyUsingGroup, "default")
+		common.SetContextKey(c, constant.ContextKeyTokenModelLimitEnabled, true)
+		common.SetContextKey(c, constant.ContextKeyTokenModelLimit, map[string]bool{"claude-sonnet-4.5": true})
+		mr := &ModelRequest{Model: "auto"}
+		err := resolveSmartRoutingModel(c, mr)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "fallback model gpt-5.1 is not usable")
+		assert.Equal(t, "failed", mustSmartRoutingDecision(t, c).ChosenBy)
 	})
 
 	t.Run("empty pool without fallback errors", func(t *testing.T) {
 		setupSmartRoutingTestDB(t, nil)
-		useSmartRoutingSettings(t, operation_setting.SmartRoutingSetting{
+		useSmartRoutingSettings(t, operation_setting.AutoRoutingSetting{
 			Enabled: true, VirtualModel: "auto", BaseURL: "http://127.0.0.1:1", ApiKey: "k", TimeoutMs: 1000,
 		})
 
@@ -289,15 +318,6 @@ func TestResolveSmartRoutingModel(t *testing.T) {
 		err := resolveSmartRoutingModel(c, mr)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "empty_pool")
-		assert.Equal(t, "failed", mustDecision(t, c).ChosenBy)
+		assert.Equal(t, "failed", mustSmartRoutingDecision(t, c).ChosenBy)
 	})
-}
-
-func mustDecision(t *testing.T, c *gin.Context) smartRoutingDecision {
-	t.Helper()
-	value, exists := c.Get("smart_routing")
-	require.True(t, exists)
-	decision, ok := value.(smartRoutingDecision)
-	require.True(t, ok)
-	return decision
 }

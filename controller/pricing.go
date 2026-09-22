@@ -4,8 +4,11 @@ import (
 	"maps"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/constant"
+	"github.com/QuantumNous/new-api/i18n"
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/service"
+	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/QuantumNous/new-api/setting/ratio_setting"
 
 	"github.com/gin-gonic/gin"
@@ -57,6 +60,31 @@ func GetPricing(c *gin.Context) {
 
 	usableGroup = service.GetUserUsableGroups(group)
 	pricing = filterPricingByUsableGroups(pricing, usableGroup)
+	// 智能路由开启时，定价页展示虚拟名条目；不编造价格，说明计费跟随实际模型。
+	if smartRouting := operation_setting.GetAutoRoutingSetting(); smartRouting.Enabled {
+		virtualName := smartRouting.VirtualName()
+		hasVirtual := false
+		for _, item := range pricing {
+			if item.ModelName == virtualName {
+				hasVirtual = true
+				break
+			}
+		}
+		if !hasVirtual {
+			enableGroups := make([]string, 0, len(usableGroup))
+			for g := range usableGroup {
+				enableGroups = append(enableGroups, g)
+			}
+			pricing = append(pricing, model.Pricing{
+				ModelName:              virtualName,
+				Description:            i18n.T(c, i18n.MsgPricingSmartRoutingDescription),
+				OwnerBy:                "new-api",
+				QuotaType:              0,
+				EnableGroup:            enableGroups,
+				SupportedEndpointTypes: []constant.EndpointType{constant.EndpointTypeOpenAI, constant.EndpointTypeAnthropic},
+			})
+		}
+	}
 	// check groupRatio contains usableGroup
 	for group := range ratio_setting.GetGroupRatioCopy() {
 		if _, ok := usableGroup[group]; !ok {

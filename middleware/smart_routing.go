@@ -15,7 +15,6 @@ import (
 	"github.com/QuantumNous/new-api/constant"
 	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
-	"github.com/QuantumNous/new-api/setting/ratio_setting"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
@@ -36,17 +35,24 @@ const (
 var jevHTTPClient = &http.Client{}
 
 type smartRoutingDecision struct {
-	PoolSize  int    `json:"pool_size"`
-	ChosenBy  string `json:"chosen_by"`
-	Reason    string `json:"reason,omitempty"`
-	LatencyMs int64  `json:"latency_ms,omitempty"`
-	JevModel  string `json:"jev_model,omitempty"`
+	PoolSize  int      `json:"pool_size"`
+	ChosenBy  string   `json:"chosen_by"`
+	Reason    string   `json:"reason,omitempty"`
+	LatencyMs int64    `json:"latency_ms,omitempty"`
+	JevModel  string   `json:"jev_model,omitempty"`
+	JevUsage  jevUsage `json:"jev_usage,omitempty"`
+}
+
+// jevUsage is the classifier call's own token cost, recorded in the admin log
+// as gateway-side consumption (the classifier is not billed to the user).
+type jevUsage struct {
+	InputTokens int `json:"input_tokens"`
 }
 
 // resolveSmartRoutingModel rewrites modelRequest.Model from the virtual name
 // to a concrete model, keeping the cached request body in sync.
 func resolveSmartRoutingModel(c *gin.Context, modelRequest *ModelRequest) error {
-	setting := operation_setting.GetSmartRoutingSetting()
+	setting := operation_setting.GetAutoRoutingSetting()
 	pool := smartRoutingCandidatePool(c)
 	decision := smartRoutingDecision{PoolSize: len(pool)}
 
@@ -58,14 +64,15 @@ func resolveSmartRoutingModel(c *gin.Context, modelRequest *ModelRequest) error 
 		decision.Reason = "missing_api_key"
 	default:
 		start := time.Now()
-		answer, jevModel, err := askJevSystemOne(c, setting, pool, smartRoutingState(c))
+		answer, jevModel, usage, err := askJevSystemOne(c, setting, pool, smartRoutingState(c))
 		decision.LatencyMs = time.Since(start).Milliseconds()
+		decision.JevUsage = usage
 		switch {
 		case err != nil:
 			decision.Reason = err.Error()
 		default:
-			if matched, ok := matchSmartRoutingAnswer(answer, pool); ok {
-				chosen = matched
+			if matchSmartRoutingPoolAnswer(answer, pool) {
+				chosen = answer
 				decision.JevModel = jevModel
 			} else {
 				decision.Reason = fmt.Sprintf("answer %q not in pool", answer)
@@ -74,23 +81,43 @@ func resolveSmartRoutingModel(c *gin.Context, modelRequest *ModelRequest) error 
 	}
 
 	if chosen == "" {
+		// The fallback must satisfy the same boundary as the pool: an operator
+		// misconfiguration surfaces as an explicit error instead of a downstream
+		// 403, so a healthy classifier answer is never silently blocked.
 		if setting.FallbackModel == "" {
 			decision.ChosenBy = "failed"
-			c.Set("smart_routing", decision)
+			common.SetContextKey(c, constant.ContextKeySmartRoutingDecision, decision)
 			return fmt.Errorf("smart routing failed (%s) and no fallback model is configured", decision.Reason)
+		}
+		if !slices.Contains(pool, setting.FallbackModel) && !smartRoutingTokenAllows(c, setting.FallbackModel) {
+			decision.ChosenBy = "failed"
+			decision.Reason += "; fallback model " + setting.FallbackModel + " is not usable for this request"
+			common.SetContextKey(c, constant.ContextKeySmartRoutingDecision, decision)
+			return fmt.Errorf("%s", decision.Reason)
 		}
 		chosen = setting.FallbackModel
 		decision.ChosenBy = "fallback"
 	} else {
 		decision.ChosenBy = "jev"
 	}
-	c.Set("smart_routing", decision)
+	common.SetContextKey(c, constant.ContextKeySmartRoutingDecision, decision)
 
 	if err := rewriteRequestBodyModel(c, chosen); err != nil {
 		return err
 	}
 	modelRequest.Model = chosen
 	return nil
+}
+
+// smartRoutingTokenAllows reports whether the token allowlist admits a
+// fallback model when a pool membership check is impossible (empty pool).
+func smartRoutingTokenAllows(c *gin.Context, modelName string) bool {
+	if !common.GetContextKeyBool(c, constant.ContextKeyTokenModelLimitEnabled) {
+		return false
+	}
+	limit, ok := common.GetContextKey(c, constant.ContextKeyTokenModelLimit)
+	tokenModelLimit, valid := limit.(map[string]bool)
+	return ok && valid && TokenModelLimitAllows(tokenModelLimit, modelName)
 }
 
 // smartRoutingCandidatePool is the set of models the classifier may choose:
@@ -153,8 +180,8 @@ func smartRoutingState(c *gin.Context) string {
 		}
 		break
 	}
-	if utf8.RuneCountInString(text) > operation_setting.SmartRoutingStateMaxChars {
-		text = string([]rune(text)[:operation_setting.SmartRoutingStateMaxChars])
+	if utf8.RuneCountInString(text) > operation_setting.AutoRoutingStateMaxChars {
+		text = string([]rune(text)[:operation_setting.AutoRoutingStateMaxChars])
 	}
 	return text
 }
@@ -171,12 +198,15 @@ type jevResponse struct {
 		Type   string `json:"type"`
 		Choice string `json:"choice"`
 	} `json:"answers"`
+	Usage struct {
+		InputTokens int `json:"input_tokens"`
+	} `json:"usage"`
 }
 
 // askJevSystemOne poses one closed choice question whose criteria keys are
-// exactly the candidate models, and returns the chosen answer plus the
-// concrete classifier version that answered.
-func askJevSystemOne(c *gin.Context, setting *operation_setting.SmartRoutingSetting, pool []string, state string) (string, string, error) {
+// exactly the candidate models, and returns the chosen answer, the concrete
+// classifier version that answered, and the call's own input-token usage.
+func askJevSystemOne(c *gin.Context, setting *operation_setting.AutoRoutingSetting, pool []string, state string) (string, string, jevUsage, error) {
 	criteria := make(map[string]string, len(pool))
 	for _, modelName := range pool {
 		criteria[modelName] = modelName
@@ -189,51 +219,39 @@ func askJevSystemOne(c *gin.Context, setting *operation_setting.SmartRoutingSett
 		},
 	})
 	if err != nil {
-		return "", "", err
+		return "", "", jevUsage{}, err
 	}
 	requestContext, cancel := context.WithTimeout(c.Request.Context(), time.Duration(setting.Timeout())*time.Millisecond)
 	defer cancel()
 	req, err := http.NewRequestWithContext(requestContext, http.MethodPost, strings.TrimRight(setting.BaseURL, "/")+jevSystemOnePath, bytes.NewReader(payload))
 	if err != nil {
-		return "", "", err
+		return "", "", jevUsage{}, err
 	}
 	req.Header.Set("Authorization", "Bearer "+setting.ApiKey)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := jevHTTPClient.Do(req)
 	if err != nil {
-		return "", "", err
+		return "", "", jevUsage{}, err
 	}
 	defer resp.Body.Close()
 	responseBody, err := io.ReadAll(io.LimitReader(resp.Body, jevResponseMaxBytes))
 	if err != nil {
-		return "", "", err
+		return "", "", jevUsage{}, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return "", "", fmt.Errorf("jev status %d: %s", resp.StatusCode, strings.TrimSpace(string(responseBody)))
+		return "", "", jevUsage{}, fmt.Errorf("jev status %d: %s", resp.StatusCode, strings.TrimSpace(string(responseBody)))
 	}
 	var parsed jevResponse
 	if err := common.Unmarshal(responseBody, &parsed); err != nil {
-		return "", "", err
+		return "", "", jevUsage{}, err
 	}
-	return parsed.Answers["model"].Choice, parsed.Model, nil
+	return parsed.Answers["model"].Choice, parsed.Model, jevUsage{InputTokens: parsed.Usage.InputTokens}, nil
 }
 
-// matchSmartRoutingAnswer accepts the classifier answer when it names a pool
-// model, tolerating routing-normalized aliases the way channel selection does.
-func matchSmartRoutingAnswer(answer string, pool []string) (string, bool) {
-	if answer == "" {
-		return "", false
-	}
-	if slices.Contains(pool, answer) {
-		return answer, true
-	}
-	normalizedAnswer := ratio_setting.RoutingMatchModelName(answer)
-	for _, modelName := range pool {
-		if ratio_setting.RoutingMatchModelName(modelName) == normalizedAnswer {
-			return modelName, true
-		}
-	}
-	return "", false
+// matchSmartRoutingPoolAnswer accepts the classifier answer only when it is
+// exactly one of the pool model names sent as the closed choice set.
+func matchSmartRoutingPoolAnswer(answer string, pool []string) bool {
+	return answer != "" && slices.Contains(pool, answer)
 }
 
 // rewriteRequestBodyModel replaces the top-level model field in the cached

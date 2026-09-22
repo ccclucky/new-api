@@ -56,6 +56,11 @@ const (
 
 	ContextKeyLocalCountTokens ContextKey = "local_count_tokens"
 
+	// ContextKeySmartRoutingDecision stores the smart routing resolution outcome
+	// (chosen model source, fallback reason, classifier latency and usage) for the
+	// admin-only consume log. Set by the distributor rewrite, read by log_info_generate.
+	ContextKeySmartRoutingDecision ContextKey = "smart_routing_decision"
+
 	ContextKeySystemPromptOverride ContextKey = "system_prompt_override"
 
 	// ContextKeyFileSourcesToCleanup stores file sources that need cleanup when request ends

@@ -92,7 +92,7 @@ func AppendRelayLogAdminInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 	}
 
 	AppendChannelAffinityAdminInfo(ctx, other)
-	if decision, ok := ctx.Get("smart_routing"); ok && decision != nil {
+	if decision, ok := common.GetContextKey(ctx, constant.ContextKeySmartRoutingDecision); ok && decision != nil {
 		other.SetAdmin("smart_routing", decision)
 	}
 	if events := RequestPolicy(ctx).Events(); len(events) > 0 {

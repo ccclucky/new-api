@@ -53,10 +53,13 @@ func Distribute() func(c *gin.Context) {
 		}
 		_, pinned, _ := constraints.ResolvedPin()
 		if !pinned {
-			smartRouting := operation_setting.GetSmartRoutingSetting()
+			smartRouting := operation_setting.GetAutoRoutingSetting()
 			if smartRouting.Enabled && modelRequest.Model == smartRouting.VirtualName() {
-				// 智能路由 v1 仅覆盖 chat completions 与 messages 协议
-				if !strings.Contains(c.Request.URL.Path, "/chat/completions") && !strings.Contains(c.Request.URL.Path, "/messages") {
+				// 智能路由 v1 仅覆盖 JSON 请求体的 chat completions 与 messages 协议
+				requestPath := c.Request.URL.Path
+				isJsonBody := strings.HasPrefix(c.Request.Header.Get("Content-Type"), "application/json")
+				isSupportedPath := strings.HasSuffix(requestPath, "/chat/completions") || strings.HasSuffix(requestPath, "/messages")
+				if !isSupportedPath || !isJsonBody {
 					abortWithOpenAiMessage(c, http.StatusBadRequest, i18n.T(c, i18n.MsgDistributorSmartRoutingUnsupportedEndpoint))
 					return
 				}

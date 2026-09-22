@@ -5010,7 +5010,6 @@
     "Route group": "路由組",
     "Route is required": "路由為必填項",
     "Route models must be unique for the same incoming path": "同一入口路徑下的路由模型必須唯一",
-    "Route requests without a model choice through an external decision model.": "透過外部決策模型為未指定模型的請求自動選擇模型。",
     "Route, auth, and balance check in one place": "路由、認證和餘額檢查集中展示",
     "Routes": "路由",
     "Routes in this plan": "方案中的路由",
@@ -6784,6 +6783,9 @@
     "Zhipu": "智譜",
     "Zhipu GLM": "智譜GLM",
     "Zhipu V4": "智譜 V4",
-    "Zoom": "縮放"
+    "Zoom": "縮放",
+    "Model name cannot be empty": "模型名稱不能為空",
+    "Invalid URL": "無效的 URL",
+    "(leave blank to keep current key)": "（留空則保留目前 key）"
   }
 }

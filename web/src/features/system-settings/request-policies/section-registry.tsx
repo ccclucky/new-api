@@ -16,17 +16,17 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { createSectionRegistry } from "../utils/section-registry";
-import { ChannelHealthSection } from "./channel-health-section";
-import type { RequestPolicySettings } from "./defaults";
-import { RequestChecksSection } from "./request-checks-section";
-import { RoutingPolicySection } from "./routing-section";
-import { SmartRoutingSection } from "./smart-routing-section";
+import { createSectionRegistry } from '../utils/section-registry'
+import { ChannelHealthSection } from './channel-health-section'
+import type { RequestPolicySettings } from './defaults'
+import { RequestChecksSection } from './request-checks-section'
+import { RoutingPolicySection } from './routing-section'
+import { SmartRoutingSection } from './smart-routing-section'
 
 const POLICY_SECTIONS = [
   {
-    id: "filtering",
-    titleKey: "Request checks",
+    id: 'filtering',
+    titleKey: 'Request checks',
     build: (settings: RequestPolicySettings) => (
       <RequestChecksSection
         defaultValues={{
@@ -38,32 +38,32 @@ const POLICY_SECTIONS = [
     ),
   },
   {
-    id: "routing",
-    titleKey: "Sessions and retries",
+    id: 'routing',
+    titleKey: 'Sessions and retries',
     build: () => <RoutingPolicySection />,
   },
   {
-    id: "smart-routing",
-    titleKey: "Smart routing",
+    id: 'smart-routing',
+    titleKey: 'Smart routing',
     build: () => <SmartRoutingSection />,
   },
   {
-    id: "health",
-    titleKey: "Channel health",
+    id: 'health',
+    titleKey: 'Channel health',
     build: (settings: RequestPolicySettings) => (
       <ChannelHealthSection defaultValues={settings} />
     ),
   },
-] as const;
+] as const
 
-export type PolicySectionId = (typeof POLICY_SECTIONS)[number]["id"];
+export type PolicySectionId = (typeof POLICY_SECTIONS)[number]['id']
 const registry = createSectionRegistry<PolicySectionId, RequestPolicySettings>({
   sections: POLICY_SECTIONS,
-  defaultSection: "routing",
-  basePath: "/system-settings/request-policies",
-  urlStyle: "path",
-});
-export const POLICY_SECTION_IDS = registry.sectionIds;
-export const getPolicySectionNavItems = registry.getSectionNavItems;
-export const getPolicySectionContent = registry.getSectionContent;
-export const getPolicySectionMeta = registry.getSectionMeta;
+  defaultSection: 'routing',
+  basePath: '/system-settings/request-policies',
+  urlStyle: 'path',
+})
+export const POLICY_SECTION_IDS = registry.sectionIds
+export const getPolicySectionNavItems = registry.getSectionNavItems
+export const getPolicySectionContent = registry.getSectionContent
+export const getPolicySectionMeta = registry.getSectionMeta

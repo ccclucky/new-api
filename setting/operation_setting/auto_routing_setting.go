@@ -2,10 +2,10 @@ package operation_setting
 
 import "github.com/QuantumNous/new-api/setting/config"
 
-// SmartRoutingSetting 智能路由：客户端用虚拟模型名调用时，网关把请求内容
+// AutoRoutingSetting 智能路由：客户端用虚拟模型名调用时，网关把请求内容
 // 交给外部决策模型（Jev / TypeSafe AI System One）选择真实模型。默认关闭：
 // 开启即会把用户内容发给第三方，需管理员显式同意。
-type SmartRoutingSetting struct {
+type AutoRoutingSetting struct {
 	Enabled       bool   `json:"enabled"`        // 总开关，默认关闭
 	VirtualModel  string `json:"virtual_model"`  // 虚拟模型名，默认 auto
 	BaseURL       string `json:"base_url"`       // 决策模型 API 地址
@@ -15,40 +15,40 @@ type SmartRoutingSetting struct {
 }
 
 const (
-	SmartRoutingDefaultVirtualModel = "auto"
-	SmartRoutingDefaultTimeoutMs    = 2000
-	// SmartRoutingStateMaxChars 发送给决策模型的用户内容上限（rune 数）。
-	SmartRoutingStateMaxChars = 2000
+	AutoRoutingDefaultVirtualModel = "auto"
+	AutoRoutingDefaultTimeoutMs    = 500
+	// AutoRoutingStateMaxChars 发送给决策模型的用户内容上限（rune 数）。
+	AutoRoutingStateMaxChars = 2000
 )
 
-var smartRoutingSetting = SmartRoutingSetting{
+var autoRoutingSetting = AutoRoutingSetting{
 	Enabled:      false,
-	VirtualModel: SmartRoutingDefaultVirtualModel,
+	VirtualModel: AutoRoutingDefaultVirtualModel,
 	BaseURL:      "https://api.typesafe.ai",
 	ApiKey:       "",
-	TimeoutMs:    SmartRoutingDefaultTimeoutMs,
+	TimeoutMs:    AutoRoutingDefaultTimeoutMs,
 }
 
 func init() {
-	config.GlobalConfig.Register("smart_routing_setting", &smartRoutingSetting)
+	config.GlobalConfig.Register("auto_routing_setting", &autoRoutingSetting)
 }
 
-func GetSmartRoutingSetting() *SmartRoutingSetting {
-	return &smartRoutingSetting
+func GetAutoRoutingSetting() *AutoRoutingSetting {
+	return &autoRoutingSetting
 }
 
 // VirtualName 返回生效的虚拟模型名，管理员留空时回退默认值。
-func (s *SmartRoutingSetting) VirtualName() string {
+func (s *AutoRoutingSetting) VirtualName() string {
 	if s.VirtualModel == "" {
-		return SmartRoutingDefaultVirtualModel
+		return AutoRoutingDefaultVirtualModel
 	}
 	return s.VirtualModel
 }
 
 // Timeout 返回生效的决策超时，非法值回退默认值。
-func (s *SmartRoutingSetting) Timeout() int {
+func (s *AutoRoutingSetting) Timeout() int {
 	if s.TimeoutMs <= 0 {
-		return SmartRoutingDefaultTimeoutMs
+		return AutoRoutingDefaultTimeoutMs
 	}
 	return s.TimeoutMs
 }

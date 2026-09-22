@@ -5010,7 +5010,6 @@
     "Route group": "Nhóm tuyến",
     "Route is required": "Đường dẫn là bắt buộc",
     "Route models must be unique for the same incoming path": "Các mô hình tuyến phải là duy nhất cho cùng đường dẫn đầu vào",
-    "Route requests without a model choice through an external decision model.": "Tự động định tuyến yêu cầu không chọn mô hình qua mô hình quyết định bên ngoài.",
     "Route, auth, and balance check in one place": "Kiểm tra tuyến, xác thực và số dư ở cùng một nơi",
     "Routes": "Route",
     "Routes in this plan": "Các route trong cấu hình",
@@ -6784,6 +6783,9 @@
     "Zhipu": "Zhipu",
     "Zhipu GLM": "Zhipu GLM",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "Model name cannot be empty": "Tên mô hình không được để trống",
+    "Invalid URL": "URL không hợp lệ",
+    "(leave blank to keep current key)": "(để trống để giữ key hiện tại)"
   }
 }

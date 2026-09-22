@@ -5010,7 +5010,6 @@
     "Route group": "ルートグループ",
     "Route is required": "ルートは必須です",
     "Route models must be unique for the same incoming path": "同じ入力パスではルートのモデルを一意にしてください",
-    "Route requests without a model choice through an external decision model.": "モデルを指定しないリクエストを外部の判断モデルで自動ルーティングします。",
     "Route, auth, and balance check in one place": "ルート、認証、残高確認を一か所に集約",
     "Routes": "ルート",
     "Routes in this plan": "このプランのルート",
@@ -6784,6 +6783,9 @@
     "Zhipu": "Zhipu",
     "Zhipu GLM": "Zhipu GLM",
     "Zhipu V4": "Zhipu V 4",
-    "Zoom": "ズーム"
+    "Zoom": "ズーム",
+    "Model name cannot be empty": "モデル名を空にできません",
+    "Invalid URL": "無効な URL",
+    "(leave blank to keep current key)": "（空欄のままなら現在のキーを維持）"
   }
 }

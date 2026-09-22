@@ -277,6 +277,7 @@ distributor.token_model_forbidden: "This token has no access to model {{.Model}}
 distributor.model_name_required: "Model name not specified, model name cannot be empty"
 distributor.smart_routing_unsupported_endpoint: "Smart routing (virtual model) is only supported for chat completions and messages endpoints"
 distributor.smart_routing_failed: "Smart routing failed: no usable model was resolved and no fallback model is configured"
+pricing.smart_routing_description: "Smart routing: the gateway picks the model per request; billing follows the resolved model."
 distributor.invalid_playground_request: "Invalid playground request: {{.Error}}"
 distributor.group_access_denied: "No permission to access this group"
 distributor.get_channel_failed: "Failed to get available channel for model {{.Model}} under group {{.Group}} (distributor): {{.Error}}"

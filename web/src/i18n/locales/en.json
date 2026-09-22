@@ -5010,7 +5010,6 @@
     "Route group": "Route group",
     "Route is required": "Route is required",
     "Route models must be unique for the same incoming path": "Route models must be unique for the same incoming path",
-    "Route requests without a model choice through an external decision model.": "Route requests without a model choice through an external decision model.",
     "Route, auth, and balance check in one place": "Route, auth, and balance check in one place",
     "Routes": "Routes",
     "Routes in this plan": "Routes in this plan",
@@ -6784,6 +6783,9 @@
     "Zhipu": "Zhipu",
     "Zhipu GLM": "Zhipu GLM",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "Model name cannot be empty": "Model name cannot be empty",
+    "Invalid URL": "Invalid URL",
+    "(leave blank to keep current key)": "(leave blank to keep current key)"
   }
 }

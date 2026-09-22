@@ -5010,7 +5010,6 @@
     "Route group": "Группа маршрутов",
     "Route is required": "Маршрут обязателен",
     "Route models must be unique for the same incoming path": "Модели маршрутов для одного входного пути должны быть уникальными",
-    "Route requests without a model choice through an external decision model.": "Маршрутизируйте запросы с автоматическим выбором модели через внешнюю модель принятия решений.",
     "Route, auth, and balance check in one place": "Маршрут, аутентификация и баланс в одном месте",
     "Routes": "Маршруты",
     "Routes in this plan": "Маршруты в этой схеме",
@@ -6784,6 +6783,9 @@
     "Zhipu": "Zhipu",
     "Zhipu GLM": "Zhipu GLM",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "Model name cannot be empty": "Имя модели не может быть пустым",
+    "Invalid URL": "Недопустимый URL",
+    "(leave blank to keep current key)": "(оставьте пустым, чтобы сохранить текущий ключ)"
   }
 }
