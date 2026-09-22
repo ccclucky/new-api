@@ -462,6 +462,7 @@ export type UpstreamConfig = {
 export type FetchUpstreamRatiosRequest = {
   upstreams: UpstreamConfig[]
   timeout: number
+  ignore_prefix?: boolean
 }
 
 export type TestResult = {

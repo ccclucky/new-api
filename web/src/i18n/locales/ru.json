@@ -19,6 +19,7 @@
     "(hits the override rule above)": "(срабатывает правило переопределения выше)",
     "(ID: {{id}})": "(ID: {{id}})",
     "(instead of {{ratio}})": "(вместо {{ratio}})",
+    "(leave blank to keep current key)": "(оставьте пустым, чтобы сохранить текущий ключ)",
     "(Leave empty to dissolve tag)": "(Оставьте пустым, чтобы удалить тег)",
     "(matrix cell vip × premium is set)": "(ячейка матрицы vip × premium задана)",
     "(no matrix cell, so base ratio of default; the vip 0.8 is irrelevant)": "(ячейки нет, поэтому базовый коэффициент default; 0,8 группы vip не участвует)",
@@ -2914,6 +2915,7 @@
     "If your Passkey belongs to another website, start sign-in there:": "Если ключ доступа относится к другому сайту, войдите на том сайте:",
     "Ignore": "Игнорировать",
     "Ignore this version": "Игнорировать эту версию",
+    "Ignore vendor prefix": "Игнорировать префикс поставщика",
     "Ignored upstream models": "Игнорируемые upstream-модели",
     "image": "изображение",
     "Image": "Изображение",
@@ -3043,6 +3045,7 @@
     "Invalid status code mapping entries: {{entries}}": "Недопустимые записи маппинга кодов состояния: {{entries}}",
     "Invalid status code rules": "Недопустимые правила кодов состояния",
     "Invalid status code rules: {{tokens}}": "Недопустимые правила кодов состояния: {{tokens}}",
+    "Invalid URL": "Недопустимый URL",
     "Invalid vLLM server address": "Некорректный адрес сервера vLLM",
     "Invalidate": "Аннулировать",
     "Invalidated": "Аннулирована",
@@ -3455,6 +3458,7 @@
     "Model name": "Имя модели",
     "Model Name": "Название модели",
     "Model Name *": "Имя модели *",
+    "Model name cannot be empty": "Имя модели не может быть пустым",
     "Model name is required": "Название модели обязательно",
     "Model names copied to clipboard": "Названия моделей скопированы в буфер обмена",
     "Model not found": "Модель не найдена",
@@ -6783,9 +6787,6 @@
     "Zhipu": "Zhipu",
     "Zhipu GLM": "Zhipu GLM",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom",
-    "Model name cannot be empty": "Имя модели не может быть пустым",
-    "Invalid URL": "Недопустимый URL",
-    "(leave blank to keep current key)": "(оставьте пустым, чтобы сохранить текущий ключ)"
+    "Zoom": "Zoom"
   }
 }

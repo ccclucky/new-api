@@ -19,6 +19,7 @@
     "(hits the override rule above)": "（上の上書きルールに一致）",
     "(ID: {{id}})": "（ID: {{id}}）",
     "(instead of {{ratio}})": "（本来は {{ratio}}）",
+    "(leave blank to keep current key)": "（空欄のままなら現在のキーを維持）",
     "(Leave empty to dissolve tag)": "(タグを解除するには空欄のままにしてください)",
     "(matrix cell vip × premium is set)": "（マトリクスのセル vip × premium が設定済み）",
     "(no matrix cell, so base ratio of default; the vip 0.8 is irrelevant)": "（セル未設定のため default の基本倍率。vip の 0.8 は無関係）",
@@ -2914,6 +2915,7 @@
     "If your Passkey belongs to another website, start sign-in there:": "パスキーが別のサイトに属する場合は、そのサイトでログインしてください：",
     "Ignore": "無視",
     "Ignore this version": "このバージョンの通知を停止",
+    "Ignore vendor prefix": "ベンダープレフィックスを無視",
     "Ignored upstream models": "無視する上流モデル",
     "image": "枚",
     "Image": "画像",
@@ -3043,6 +3045,7 @@
     "Invalid status code mapping entries: {{entries}}": "無効なステータスコードマッピング：{{entries}}",
     "Invalid status code rules": "ステータスコードのルールが無効です",
     "Invalid status code rules: {{tokens}}": "無効なステータスコードルール：{{tokens}}",
+    "Invalid URL": "無効な URL",
     "Invalid vLLM server address": "vLLM サーバーのアドレスが無効です",
     "Invalidate": "無効化",
     "Invalidated": "無効化済み",
@@ -3455,6 +3458,7 @@
     "Model name": "モデル名",
     "Model Name": "モデル名",
     "Model Name *": "モデル名 *",
+    "Model name cannot be empty": "モデル名を空にできません",
     "Model name is required": "モデル名は必須です",
     "Model names copied to clipboard": "モデル名がクリップボードにコピーされました",
     "Model not found": "モデルが見つかりません",
@@ -6783,9 +6787,6 @@
     "Zhipu": "Zhipu",
     "Zhipu GLM": "Zhipu GLM",
     "Zhipu V4": "Zhipu V 4",
-    "Zoom": "ズーム",
-    "Model name cannot be empty": "モデル名を空にできません",
-    "Invalid URL": "無効な URL",
-    "(leave blank to keep current key)": "（空欄のままなら現在のキーを維持）"
+    "Zoom": "ズーム"
   }
 }

@@ -19,6 +19,7 @@
     "(hits the override rule above)": "(khớp quy tắc ghi đè ở trên)",
     "(ID: {{id}})": "(ID: {{id}})",
     "(instead of {{ratio}})": "(thay vì {{ratio}})",
+    "(leave blank to keep current key)": "(để trống để giữ key hiện tại)",
     "(Leave empty to dissolve tag)": "Để trống để xóa thẻ.",
     "(matrix cell vip × premium is set)": "(ô ma trận vip × premium đã được đặt)",
     "(no matrix cell, so base ratio of default; the vip 0.8 is irrelevant)": "(không có ô ma trận, nên dùng hệ số cơ bản của default; 0.8 của vip không liên quan)",
@@ -2914,6 +2915,7 @@
     "If your Passkey belongs to another website, start sign-in there:": "Nếu khóa truy cập thuộc trang web khác, hãy đăng nhập tại trang đó:",
     "Ignore": "Bỏ qua",
     "Ignore this version": "Bỏ qua phiên bản này",
+    "Ignore vendor prefix": "Bỏ qua tiền tố nhà cung cấp",
     "Ignored upstream models": "Mô hình upstream bị bỏ qua",
     "image": "ảnh",
     "Image": "Hình ảnh",
@@ -3043,6 +3045,7 @@
     "Invalid status code mapping entries: {{entries}}": "Mục ánh xạ mã trạng thái không hợp lệ: {{entries}}",
     "Invalid status code rules": "Quy tắc mã trạng thái không hợp lệ",
     "Invalid status code rules: {{tokens}}": "Quy tắc mã trạng thái không hợp lệ: {{tokens}}",
+    "Invalid URL": "URL không hợp lệ",
     "Invalid vLLM server address": "Địa chỉ máy chủ vLLM không hợp lệ",
     "Invalidate": "Vô hiệu hóa",
     "Invalidated": "Đã vô hiệu",
@@ -3455,6 +3458,7 @@
     "Model name": "Tên mẫu",
     "Model Name": "Tên mẫu",
     "Model Name *": "Tên mẫu *",
+    "Model name cannot be empty": "Tên mô hình không được để trống",
     "Model name is required": "Tên mô hình là bắt buộc",
     "Model names copied to clipboard": "Tên mô hình đã được sao chép vào bộ nhớ tạm",
     "Model not found": "Không tìm thấy mô hình",
@@ -6783,9 +6787,6 @@
     "Zhipu": "Zhipu",
     "Zhipu GLM": "Zhipu GLM",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom",
-    "Model name cannot be empty": "Tên mô hình không được để trống",
-    "Invalid URL": "URL không hợp lệ",
-    "(leave blank to keep current key)": "(để trống để giữ key hiện tại)"
+    "Zoom": "Zoom"
   }
 }
