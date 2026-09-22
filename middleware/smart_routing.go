@@ -13,6 +13,7 @@ import (
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/constant"
+	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 
@@ -203,19 +204,40 @@ type jevResponse struct {
 	} `json:"usage"`
 }
 
+// jevCriteria builds the closed choice options: each pool model name, enriched
+// with the administrator's model description when present so the classifier can
+// judge unfamiliar names by their stated strengths instead of guessing.
+func jevCriteria(pool []string) map[string]string {
+	descriptions := map[string]string{}
+	for _, pricing := range model.GetPricing() {
+		if pricing.Description != "" {
+			descriptions[pricing.ModelName] = pricing.Description
+		}
+	}
+	return jevCriteriaWithDescriptions(descriptions, pool)
+}
+
+func jevCriteriaWithDescriptions(descriptions map[string]string, pool []string) map[string]string {
+	criteria := make(map[string]string, len(pool))
+	for _, modelName := range pool {
+		hint := modelName
+		if desc, ok := descriptions[modelName]; ok {
+			hint = modelName + ": " + desc
+		}
+		criteria[modelName] = hint
+	}
+	return criteria
+}
+
 // askJevSystemOne poses one closed choice question whose criteria keys are
 // exactly the candidate models, and returns the chosen answer, the concrete
 // classifier version that answered, and the call's own input-token usage.
 func askJevSystemOne(c *gin.Context, setting *operation_setting.AutoRoutingSetting, pool []string, state string) (string, string, jevUsage, error) {
-	criteria := make(map[string]string, len(pool))
-	for _, modelName := range pool {
-		criteria[modelName] = modelName
-	}
 	payload, err := common.Marshal(jevRequest{
 		Model: jevRequestModel,
 		State: state,
 		Questions: map[string]any{
-			"model": map[string]any{"type": "choice", "criteria": criteria},
+			"model": map[string]any{"type": "choice", "criteria": jevCriteria(pool)},
 		},
 	})
 	if err != nil {

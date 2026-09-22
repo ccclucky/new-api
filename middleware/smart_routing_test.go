@@ -159,7 +159,17 @@ func TestRewriteRequestBodyModel(t *testing.T) {
 	assert.Equal(t, "gpt-5.1", mr.Model)
 }
 
+func TestJevCriteriaDescriptions(t *testing.T) {
+	descriptions := map[string]string{"alias-x": "快速便宜款"}
+	got := jevCriteriaWithDescriptions(descriptions, []string{"alias-x", "gpt-5.1"})
+	assert.Equal(t, "alias-x: 快速便宜款", got["alias-x"])
+	// Models without a registered description keep name-only criteria.
+	assert.Equal(t, "gpt-5.1", got["gpt-5.1"])
+}
+
 func TestAskJevSystemOne(t *testing.T) {
+	// askJevSystemOne enriches criteria from the pricing cache, which needs a DB.
+	setupSmartRoutingTestDB(t, nil)
 	t.Run("returns choice, version and usage", func(t *testing.T) {
 		var gotAuth string
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
