@@ -14,6 +14,7 @@ import (
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/constant"
 	"github.com/QuantumNous/new-api/model"
+	"github.com/QuantumNous/new-api/pkg/jsplugin"
 	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 
@@ -112,8 +113,13 @@ func resolveSmartRoutingModel(c *gin.Context, modelRequest *ModelRequest) error 
 
 // smartRoutingTokenAllows reports whether the token allowlist admits a
 // fallback model when a pool membership check is impossible (empty pool).
+// The chat-endpoint boundary applies here too: a media fallback would fail
+// downstream on this chat-only path.
 func smartRoutingTokenAllows(c *gin.Context, modelName string) bool {
 	if !common.GetContextKeyBool(c, constant.ContextKeyTokenModelLimitEnabled) {
+		return false
+	}
+	if !smartRoutingHasChatEndpoint(model.GetModelSupportEndpointTypes(modelName)) {
 		return false
 	}
 	limit, ok := common.GetContextKey(c, constant.ContextKeyTokenModelLimit)
@@ -121,13 +127,36 @@ func smartRoutingTokenAllows(c *gin.Context, modelName string) bool {
 	return ok && valid && TokenModelLimitAllows(tokenModelLimit, modelName)
 }
 
+// smartRoutingHasChatEndpoint reports whether a model's preferred endpoint
+// (the first of its supported kinds, see updatePricing) is a chat family --
+// the only paths smart routing v1 accepts. Media-first models (image/video
+// generation, embeddings, rerank) are excluded so the classifier can never
+// pick a model this request cannot relay. A model with no endpoint metadata
+// is kept: custom channels without data must not be falsely excluded.
+func smartRoutingHasChatEndpoint(endpoints []constant.EndpointType) bool {
+	if len(endpoints) == 0 {
+		return true
+	}
+	switch endpoints[0] {
+	case constant.EndpointTypeOpenAI, constant.EndpointTypeOpenAIResponse, constant.EndpointTypeOpenAIResponseCompact,
+		constant.EndpointTypeOpenAIAlphaSearch, constant.EndpointTypeAnthropic, constant.EndpointTypeGemini:
+		return true
+	}
+	return false
+}
+
 // smartRoutingCandidatePool is the set of models the classifier may choose:
-// enabled models of the request group intersected with the token allowlist.
+// chat-capable enabled models of the request group intersected with the token
+// allowlist.
 func smartRoutingCandidatePool(c *gin.Context) []string {
+	// Refresh the pricing cache first so the endpoint types below observe
+	// channels added moments ago; a model missing from a stale cache would
+	// otherwise stay in the pool and fail relay downstream.
+	model.GetPricing()
 	usingGroup := common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
 	groupModels := service.GetGroupsEnabledModels([]string{usingGroup})
 	if !common.GetContextKeyBool(c, constant.ContextKeyTokenModelLimitEnabled) {
-		return groupModels
+		return filterSmartRoutingChatModels(groupModels)
 	}
 	limit, ok := common.GetContextKey(c, constant.ContextKeyTokenModelLimit)
 	tokenModelLimit, valid := limit.(map[string]bool)
@@ -137,6 +166,25 @@ func smartRoutingCandidatePool(c *gin.Context) []string {
 	pool := make([]string, 0, len(groupModels))
 	for _, modelName := range groupModels {
 		if TokenModelLimitAllows(tokenModelLimit, modelName) {
+			pool = append(pool, modelName)
+		}
+	}
+	return filterSmartRoutingChatModels(pool)
+}
+
+func filterSmartRoutingChatModels(models []string) []string {
+	generation := jsplugin.DefaultRegistry.Generation()
+	pool := make([]string, 0, len(models))
+	for _, modelName := range models {
+		// Task-plugin models (image/video/music generation) can never serve a
+		// chat completion, whatever their inferred endpoint types say.
+		if _, declared := generation.CanonicalModel(modelName); declared {
+			continue
+		}
+		if target, ok := model.ResolveTaskModelAlias(generation, modelName); ok && target.PluginKey != "" {
+			continue
+		}
+		if smartRoutingHasChatEndpoint(model.GetModelSupportEndpointTypes(modelName)) {
 			pool = append(pool, modelName)
 		}
 	}

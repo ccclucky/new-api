@@ -83,6 +83,28 @@ func TestMatchSmartRoutingPoolAnswer(t *testing.T) {
 	assert.False(t, matchSmartRoutingPoolAnswer("gpt-4-gizmo-g5-7", []string{"gpt-4-gizmo-*"}))
 }
 
+func TestSmartRoutingHasChatEndpoint(t *testing.T) {
+	cases := []struct {
+		name      string
+		endpoints []constant.EndpointType
+		want      bool
+	}{
+		{"unknown endpoints kept", nil, true},
+		{"openai", []constant.EndpointType{constant.EndpointTypeOpenAI}, true},
+		{"anthropic gemini", []constant.EndpointType{constant.EndpointTypeAnthropic, constant.EndpointTypeGemini}, true},
+		{"openai response only", []constant.EndpointType{constant.EndpointTypeOpenAIResponse}, true},
+		{"image first excluded", []constant.EndpointType{constant.EndpointTypeImageGeneration, constant.EndpointTypeOpenAI}, false},
+		{"video excluded", []constant.EndpointType{constant.EndpointTypeOpenAIVideo}, false},
+		{"embeddings excluded", []constant.EndpointType{constant.EndpointTypeEmbeddings}, false},
+		{"rerank excluded", []constant.EndpointType{constant.EndpointTypeJinaRerank}, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, smartRoutingHasChatEndpoint(tc.endpoints))
+		})
+	}
+}
+
 func TestSmartRoutingCandidatePool(t *testing.T) {
 	setupSmartRoutingTestDB(t, []model.Ability{
 		{Group: "default", Model: "gpt-5.1", ChannelId: 1, Enabled: true},
