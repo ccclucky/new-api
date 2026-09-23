@@ -72,6 +72,15 @@ func mustSmartRoutingDecision(t *testing.T, c *gin.Context) smartRoutingDecision
 	return decision
 }
 
+func mustSmartRoutingSummary(t *testing.T, c *gin.Context) map[string]any {
+	t.Helper()
+	value, ok := common.GetContextKey(c, constant.ContextKeySmartRoutingSummary)
+	require.True(t, ok)
+	summary, valid := value.(map[string]any)
+	require.True(t, valid)
+	return summary
+}
+
 func TestMatchSmartRoutingPoolAnswer(t *testing.T) {
 	pool := []string{"gpt-5.1", "claude-sonnet-4.5", "gemini-3-pro"}
 
@@ -276,7 +285,12 @@ func TestResolveSmartRoutingModel(t *testing.T) {
 		assert.Equal(t, "claude-sonnet-4.5", mr.Model)
 		decision := mustSmartRoutingDecision(t, c)
 		assert.Equal(t, "jev", decision.ChosenBy)
+		assert.Equal(t, "claude-sonnet-4.5", decision.Model)
 		assert.Equal(t, 42, decision.JevUsage.InputTokens)
+		// The user-visible summary records where the virtual request landed.
+		assert.Equal(t, map[string]any{
+			"from": "auto", "to": "claude-sonnet-4.5", "by": "jev",
+		}, mustSmartRoutingSummary(t, c))
 	})
 
 	t.Run("answer outside pool falls back", func(t *testing.T) {
@@ -297,6 +311,7 @@ func TestResolveSmartRoutingModel(t *testing.T) {
 		decision := mustSmartRoutingDecision(t, c)
 		assert.Equal(t, "fallback", decision.ChosenBy)
 		assert.Contains(t, decision.Reason, "not in pool")
+		assert.Equal(t, "fallback", mustSmartRoutingSummary(t, c)["by"])
 	})
 
 	t.Run("classifier outage falls back", func(t *testing.T) {

@@ -1151,6 +1151,61 @@ export function DetailsDialog(props: DetailsDialogProps) {
             </DetailSection>
           )}
 
+        {/* Smart routing summary (user-visible; the full decision is admin info) */}
+        {other?.smart_routing && (
+          <DetailSection label={t('Smart routing')}>
+            <DetailRow
+              label={t('Request Model')}
+              value={other.smart_routing.from}
+              mono
+            />
+            <DetailRow
+              label={t('Actual Model')}
+              value={other.smart_routing.to}
+              mono
+            />
+            <DetailRow
+              label={t('Selected by')}
+              value={
+                other.smart_routing.by === 'jev'
+                  ? t('Decision model')
+                  : t('Fallback')
+              }
+            />
+          </DetailSection>
+        )}
+
+        {/* Full routing decision (admin only) */}
+        {props.isAdmin && adminInfo?.smart_routing && (
+          <DetailSection label={t('Routing decision')}>
+            {adminInfo.smart_routing.pool_size != null && (
+              <DetailRow
+                label={t('Candidate models')}
+                value={adminInfo.smart_routing.pool_size}
+              />
+            )}
+            {adminInfo.smart_routing.latency_ms != null && (
+              <DetailRow
+                label={t('Latency')}
+                value={`${adminInfo.smart_routing.latency_ms} ms`}
+              />
+            )}
+            {adminInfo.smart_routing.jev_model && (
+              <DetailRow
+                label={t('Decision model')}
+                value={adminInfo.smart_routing.jev_model}
+                mono
+              />
+            )}
+            {adminInfo.smart_routing.reason && (
+              <DetailRow
+                label={t('Reason')}
+                value={adminInfo.smart_routing.reason}
+              />
+            )}
+          </DetailSection>
+        )}
+
         {/* Token breakdown (for consume/error types with token data) */}
         {isDisplayableType(props.log.type) && other && (
           <TokenBreakdown log={props.log} other={other} />

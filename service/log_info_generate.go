@@ -95,6 +95,11 @@ func AppendRelayLogAdminInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 	if decision, ok := common.GetContextKey(ctx, constant.ContextKeySmartRoutingDecision); ok && decision != nil {
 		other.SetAdmin("smart_routing", decision)
 	}
+	// User-visible routing summary ({from,to,by}) so the log owner can see a
+	// virtual-name request and the model it was routed to; set only on success.
+	if summary, ok := common.GetContextKey(ctx, constant.ContextKeySmartRoutingSummary); ok && summary != nil {
+		other.SetPublic("smart_routing", summary)
+	}
 	if events := RequestPolicy(ctx).Events(); len(events) > 0 {
 		other.SetAdmin("request_policy", events)
 	}

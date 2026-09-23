@@ -39,6 +39,7 @@ var jevHTTPClient = &http.Client{}
 type smartRoutingDecision struct {
 	PoolSize  int      `json:"pool_size"`
 	ChosenBy  string   `json:"chosen_by"`
+	Model     string   `json:"model,omitempty"`
 	Reason    string   `json:"reason,omitempty"`
 	LatencyMs int64    `json:"latency_ms,omitempty"`
 	JevModel  string   `json:"jev_model,omitempty"`
@@ -102,12 +103,19 @@ func resolveSmartRoutingModel(c *gin.Context, modelRequest *ModelRequest) error 
 	} else {
 		decision.ChosenBy = "jev"
 	}
+	decision.Model = chosen
 	common.SetContextKey(c, constant.ContextKeySmartRoutingDecision, decision)
 
 	if err := rewriteRequestBodyModel(c, chosen); err != nil {
 		return err
 	}
 	modelRequest.Model = chosen
+	// User-visible consume-log summary; the full decision remains admin-only.
+	common.SetContextKey(c, constant.ContextKeySmartRoutingSummary, map[string]any{
+		"from": setting.VirtualName(),
+		"to":   chosen,
+		"by":   decision.ChosenBy,
+	})
 	return nil
 }
 

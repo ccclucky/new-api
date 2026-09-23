@@ -147,6 +147,17 @@ export interface LogOtherData {
     // Reject / intercept reason (admin only)
     reject_reason?: string
     task_plugin?: TaskPluginInfo
+    // Full smart routing decision (admin only): candidate pool size, the
+    // chosen model and source, classifier latency, version and failure reason.
+    smart_routing?: {
+      pool_size?: number
+      chosen_by?: string
+      model?: string
+      reason?: string
+      latency_ms?: number
+      jev_model?: string
+      jev_usage?: { input_tokens?: number }
+    }
   }
   root_info?: {
     task_plugin?: TaskPluginRuntimeInfo
@@ -240,6 +251,14 @@ export interface LogOtherData {
   po?: string[]
   billing_source?: string
   group?: string
+  // Smart routing summary (user-visible): a virtual-name request the gateway
+  // resolved to a concrete model. `by` is "jev" (decision model) or
+  // "fallback". The full decision stays in admin_info.smart_routing.
+  smart_routing?: {
+    from: string
+    to: string
+    by: 'jev' | 'fallback' | string
+  }
   stream_status?: {
     status?: string
     end_reason?: string
