@@ -8,10 +8,9 @@ type UpstreamDTO struct {
 }
 
 type UpstreamRequest struct {
-	ChannelIDs   []int64       `json:"channel_ids"`
-	Upstreams    []UpstreamDTO `json:"upstreams"`
-	Timeout      int           `json:"timeout"`
-	IgnorePrefix bool          `json:"ignore_prefix"`
+	ChannelIDs []int64       `json:"channel_ids"`
+	Upstreams  []UpstreamDTO `json:"upstreams"`
+	Timeout    int           `json:"timeout"`
 }
 
 // TestResult 上游测试连通性结果

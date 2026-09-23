@@ -19,7 +19,6 @@
     "(hits the override rule above)": "(correspond à la règle de remplacement ci-dessus)",
     "(ID: {{id}})": "(ID : {{id}})",
     "(instead of {{ratio}})": "(au lieu de {{ratio}})",
-    "(leave blank to keep current key)": "(laisser vide pour conserver la clé actuelle)",
     "(Leave empty to dissolve tag)": "(Laisser vide pour dissoudre le tag)",
     "(matrix cell vip × premium is set)": "(la cellule vip × premium est définie)",
     "(no matrix cell, so base ratio of default; the vip 0.8 is irrelevant)": "(pas de cellule, donc taux de base de default ; le 0,8 de vip est sans effet)",
@@ -2915,7 +2914,6 @@
     "If your Passkey belongs to another website, start sign-in there:": "Si votre clé d’accès appartient à un autre site, connectez-vous sur ce site :",
     "Ignore": "Ignorer",
     "Ignore this version": "Ignorer cette version",
-    "Ignore vendor prefix": "Ignorer le préfixe fournisseur",
     "Ignored upstream models": "Modèles amont ignorés",
     "image": "image",
     "Image": "Image",
@@ -3045,7 +3043,6 @@
     "Invalid status code mapping entries: {{entries}}": "Entrées de mappage de code d'état invalides : {{entries}}",
     "Invalid status code rules": "Règles de codes d’état invalides",
     "Invalid status code rules: {{tokens}}": "Règles de code de statut invalides : {{tokens}}",
-    "Invalid URL": "URL invalide",
     "Invalid vLLM server address": "Adresse du serveur vLLM invalide",
     "Invalidate": "Invalider",
     "Invalidated": "Invalidé",
@@ -3458,7 +3455,6 @@
     "Model name": "Nom du modèle",
     "Model Name": "Nom du modèle",
     "Model Name *": "Nom du modèle *",
-    "Model name cannot be empty": "Le nom du modèle ne peut pas être vide",
     "Model name is required": "Le nom du modèle est requis",
     "Model names copied to clipboard": "Noms des modèles copiés dans le presse-papiers",
     "Model not found": "Modèle introuvable",
@@ -6787,6 +6783,9 @@
     "Zhipu": "Zhipu",
     "Zhipu GLM": "Zhipu GLM",
     "Zhipu V4": "Zhipu V4",
-    "Zoom": "Zoom"
+    "Zoom": "Zoom",
+    "Model name cannot be empty": "Le nom du modèle ne peut pas être vide",
+    "Invalid URL": "URL invalide",
+    "(leave blank to keep current key)": "(laisser vide pour conserver la clé actuelle)"
   }
 }

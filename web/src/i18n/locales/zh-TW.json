@@ -19,7 +19,6 @@
     "(hits the override rule above)": "（命中上面的覆蓋規則）",
     "(ID: {{id}})": "（ID: {{id}}）",
     "(instead of {{ratio}})": "（原本是 {{ratio}}）",
-    "(leave blank to keep current key)": "（留空則保留目前 key）",
     "(Leave empty to dissolve tag)": "（留空以刪除標籤）",
     "(matrix cell vip × premium is set)": "（矩陣單元 vip × premium 已設定）",
     "(no matrix cell, so base ratio of default; the vip 0.8 is irrelevant)": "（無矩陣單元，取 default 的基礎倍率；vip 的 0.8 與此無關）",
@@ -2915,7 +2914,6 @@
     "If your Passkey belongs to another website, start sign-in there:": "如果通行金鑰屬於其他網站，請前往該網站登入：",
     "Ignore": "忽略",
     "Ignore this version": "忽略此版本提醒",
-    "Ignore vendor prefix": "忽略供應商前綴",
     "Ignored upstream models": "已忽略上游模型",
     "image": "張",
     "Image": "圖片",
@@ -3045,7 +3043,6 @@
     "Invalid status code mapping entries: {{entries}}": "無效的狀態碼映射條目：{{entries}}",
     "Invalid status code rules": "狀態碼規則無效",
     "Invalid status code rules: {{tokens}}": "無效的狀態碼規則：{{tokens}}",
-    "Invalid URL": "無效的 URL",
     "Invalid vLLM server address": "vLLM 服務位址無效",
     "Invalidate": "作廢",
     "Invalidated": "已作廢",
@@ -3458,7 +3455,6 @@
     "Model name": "模型名稱",
     "Model Name": "模型名稱",
     "Model Name *": "模型名稱 *",
-    "Model name cannot be empty": "模型名稱不能為空",
     "Model name is required": "模型名稱為必填項",
     "Model names copied to clipboard": "模型名稱已複製到剪貼簿",
     "Model not found": "模型未找到",
@@ -6787,6 +6783,9 @@
     "Zhipu": "智譜",
     "Zhipu GLM": "智譜GLM",
     "Zhipu V4": "智譜 V4",
-    "Zoom": "縮放"
+    "Zoom": "縮放",
+    "Model name cannot be empty": "模型名稱不能為空",
+    "Invalid URL": "無效的 URL",
+    "(leave blank to keep current key)": "（留空則保留目前 key）"
   }
 }

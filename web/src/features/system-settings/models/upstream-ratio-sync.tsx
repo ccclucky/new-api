@@ -24,7 +24,6 @@ import { toast } from 'sonner'
 
 import { ErrorState } from '@/components/error-state'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   buildPricingChanges,
   getModelPricing,
@@ -91,7 +90,6 @@ export function UpstreamRatioSync() {
   const [prices, setPrices] = useState<PricingSyncModels>({})
   const [selectedSources, setSelectedSources] =
     useState<PricingSourceSelections>({})
-  const [ignorePrefix, setIgnorePrefix] = useState(false)
   const [conflictItems, setConflictItems] = useState<ConflictItem[]>([])
   const [loadingBaseline, setLoadingBaseline] = useState(false)
   const { data: channelsData } = useQuery({
@@ -231,11 +229,7 @@ export function UpstreamRatioSync() {
     syncMutation.reset()
     try {
       setPricingBaseline(await getModelPricing())
-      fetchMutation.mutate({
-        upstreams,
-        timeout: 10,
-        ignore_prefix: ignorePrefix,
-      })
+      fetchMutation.mutate({ upstreams, timeout: 10 })
     } catch (error) {
       handleServerError(error, t('Failed to load model pricing'))
     } finally {
@@ -306,26 +300,14 @@ export function UpstreamRatioSync() {
         ) : (
           <UpstreamRatioSyncTable
             toolbar={
-              <div className='flex flex-wrap items-center gap-3'>
-                <Button
-                  variant='outline'
-                  onClick={() => setChannelDialogOpen(true)}
-                  disabled={isLoading}
-                >
-                  <RefreshCcw className='size-4' aria-hidden />
-                  {t('Select price sources')}
-                </Button>
-                <label className='text-muted-foreground flex items-center gap-2 text-sm'>
-                  <Checkbox
-                    checked={ignorePrefix}
-                    onCheckedChange={(checked) =>
-                      setIgnorePrefix(checked === true)
-                    }
-                    disabled={isLoading}
-                  />
-                  {t('Ignore vendor prefix')}
-                </label>
-              </div>
+              <Button
+                variant='outline'
+                onClick={() => setChannelDialogOpen(true)}
+                disabled={isLoading}
+              >
+                <RefreshCcw className='size-4' aria-hidden />
+                {t('Select price sources')}
+              </Button>
             }
             prices={prices}
             differences={differences}

@@ -15,28 +15,6 @@ import (
 	"net/http/httptest"
 )
 
-func TestAddVendorPrefixAliases(t *testing.T) {
-	data := map[string]any{
-		"model_ratio": map[string]any{
-			"z-ai/GLM-5.2":         float64(2),
-			"minimax/minimax-m2.5": float64(3),
-			"openai/gpt-999":       float64(4),
-			"glm-5.2":              float64(100),
-		},
-	}
-	gateway := []string{"glm-5.2", "MiniMax-M2.5", "kimi-k2.6"}
-	addVendorPrefixAliases(data, gateway)
-
-	ratios := valueMap(data["model_ratio"])
-	// The gateway's exact name already has a price; aliases must not overwrite it.
-	assert.Equal(t, float64(100), ratios["glm-5.2"])
-	// MiniMax-M2.5 matches minimax/minimax-m2.5 case-insensitively by canonical key.
-	assert.Equal(t, float64(3), ratios["MiniMax-M2.5"])
-	// No gateway model matches openai/gpt-999, so no alias is created.
-	assert.NotContains(t, ratios, "gpt-999")
-	assert.NotContains(t, ratios, "kimi-k2.6")
-}
-
 func TestPricingSyncExpressionPriority(t *testing.T) {
 	expression := `tier("base", p * 2 + c * 8 + cr * 0)`
 	cases := []struct {

@@ -10,7 +10,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -207,58 +206,6 @@ func modelPricingSyncValues(data map[string]any, name string) map[string]any {
 		}
 	}
 	return values
-}
-
-// canonicalModelKey reduces a model name to its bare segment with vendor
-// prefix removed, lowercased ("z-ai/GLM-5.2" -> "glm-5.2").
-func canonicalModelKey(name string) string {
-	if index := strings.LastIndex(name, "/"); index >= 0 {
-		name = name[index+1:]
-	}
-	return strings.ToLower(name)
-}
-
-// addVendorPrefixAliases keys provider-prefixed upstream entries additionally
-// by the gateway's own model name for the same canonical model, so
-// deployments using bare names (glm-5.2, MiniMax-M2.5) match sources that
-// publish z-ai/GLM-5.2, minimax/minimax-m2.5. Exact upstream names always
-// win; among colliding prefixes the alphabetically first provider wins.
-func addVendorPrefixAliases(data map[string]any, gatewayNames []string) {
-	actualByCanonical := make(map[string]string, len(gatewayNames))
-	sorted := slices.Clone(gatewayNames)
-	slices.Sort(sorted)
-	for _, name := range sorted {
-		canonical := canonicalModelKey(name)
-		if canonical == "" {
-			continue
-		}
-		if _, exists := actualByCanonical[canonical]; !exists {
-			actualByCanonical[canonical] = name
-		}
-	}
-	for _, field := range pricingSyncFields {
-		entries, ok := data[field].(map[string]any)
-		if !ok || len(entries) == 0 {
-			continue
-		}
-		names := make([]string, 0, len(entries))
-		for name := range entries {
-			names = append(names, name)
-		}
-		slices.Sort(names)
-		for _, name := range names {
-			if !strings.Contains(name, "/") {
-				continue
-			}
-			target, located := actualByCanonical[canonicalModelKey(name)]
-			if !located {
-				continue
-			}
-			if _, exists := entries[target]; !exists {
-				entries[target] = entries[name]
-			}
-		}
-	}
 }
 
 func FetchUpstreamRatios(c *gin.Context) {
@@ -625,14 +572,6 @@ func FetchUpstreamRatios(c *gin.Context) {
 
 	localData := effectivePricingSyncData(getLocalPricingSyncData())
 
-	// Ignore-prefix matching is anchored on the gateway's own configured model
-	// names (channel abilities), so bare names like glm-5.2 receive prices that
-	// sources publish as z-ai/GLM-5.2.
-	var gatewayModelNames []string
-	if req.IgnorePrefix {
-		gatewayModelNames = model.GetEnabledModels()
-	}
-
 	var testResults []dto.TestResult
 	var successfulChannels []struct {
 		name string
@@ -655,9 +594,6 @@ func FetchUpstreamRatios(c *gin.Context) {
 				name string
 				data map[string]any
 			}{name: r.Name, data: effectivePricingSyncData(r.Data)})
-			if req.IgnorePrefix {
-				addVendorPrefixAliases(successfulChannels[len(successfulChannels)-1].data, gatewayModelNames)
-			}
 		}
 	}
 
