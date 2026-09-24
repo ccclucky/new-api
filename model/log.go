@@ -9,6 +9,7 @@ import (
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/logger"
+	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/QuantumNous/new-api/types"
 
 	"github.com/gin-gonic/gin"
@@ -28,6 +29,31 @@ func applyExplicitLogTextFilter(tx *gorm.DB, column string, value string) (*gorm
 		return tx.Where(condition, pattern), nil
 	}
 	return tx.Where(column+" = ?", value), nil
+}
+
+// SmartRoutingModelFilter is the requested-model sentinel for "every log the
+// gateway resolved from the virtual model name". Routed consume logs keep the
+// resolved model in model_name, so they are selected by the smart_routing
+// summary stored in other instead.
+const SmartRoutingModelFilter = "smart:routed"
+
+// applyLogModelFilter filters the log list by the model a request named. The
+// configured smart routing virtual name (and the explicit sentinel) selects
+// routed logs through their other-column summary; any other value keeps the
+// ordinary model_name matching. The LIKE scan applies on top of the other
+// list filters (user, time range), not as a standalone query.
+func applyLogModelFilter(tx *gorm.DB, value string) (*gorm.DB, error) {
+	if value == "" {
+		return tx, nil
+	}
+	virtualName := ""
+	if setting := operation_setting.GetAutoRoutingSetting(); setting.Enabled {
+		virtualName = setting.VirtualName()
+	}
+	if value == SmartRoutingModelFilter || (virtualName != "" && value == virtualName) {
+		return applyExplicitLogTextFilter(tx, "logs.other", `%"smart_routing":%`)
+	}
+	return applyExplicitLogTextFilter(tx, "logs.model_name", value)
 }
 
 func buildLogLikeCondition(column string, value string) (string, string, error) {
@@ -469,7 +495,7 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 		tx = LOG_DB.Where("logs.type = ?", logType)
 	}
 
-	if tx, err = applyExplicitLogTextFilter(tx, "logs.model_name", modelName); err != nil {
+	if tx, err = applyLogModelFilter(tx, modelName); err != nil {
 		return nil, 0, err
 	}
 	if tx, err = applyExplicitLogTextFilter(tx, "logs.username", username); err != nil {
@@ -565,7 +591,7 @@ func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int
 		tx = LOG_DB.Where("logs.user_id = ? and logs.type = ?", userId, logType)
 	}
 
-	if tx, err = applyExplicitLogTextFilter(tx, "logs.model_name", modelName); err != nil {
+	if tx, err = applyLogModelFilter(tx, modelName); err != nil {
 		return nil, 0, err
 	}
 	if tokenName != "" {
