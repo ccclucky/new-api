@@ -61,13 +61,13 @@ func TestGetAllLogsRequestedModelFilterMatchesRoutedLogs(t *testing.T) {
 
 	// The virtual name selects every routed log by its summary, not the
 	// stored model_name.
-	logs, total, err := GetAllLogs(LogTypeConsume, 0, 0, "auto", "", "", 0, 10, 0, "", "", "")
+	logs, total, err := GetAllLogs(LogFilter{Type: LogTypeConsume, ModelName: "auto"}, 0, 10)
 	require.NoError(t, err)
 	require.Equal(t, int64(1), total)
 	assert.Equal(t, "claude-sonnet-4.5", logs[0].ModelName)
 
 	// The explicit sentinel behaves identically.
-	logs, total, err = GetAllLogs(LogTypeConsume, 0, 0, SmartRoutingModelFilter, "", "", 0, 10, 0, "", "", "")
+	logs, total, err = GetAllLogs(LogFilter{Type: LogTypeConsume, ModelName: SmartRoutingModelFilter}, 0, 10)
 	require.NoError(t, err)
 	require.Equal(t, int64(1), total)
 	assert.Equal(t, "claude-sonnet-4.5", logs[0].ModelName)
@@ -78,13 +78,13 @@ func TestGetAllLogsRequestedModelFilterKeepsOrdinaryMatching(t *testing.T) {
 	useAutoRoutingSettings(t, true, "auto")
 
 	// Real model names keep exact matching.
-	_, total, err := GetAllLogs(LogTypeConsume, 0, 0, "gpt-5.1", "", "", 0, 10, 0, "", "", "")
+	_, total, err := GetAllLogs(LogFilter{Type: LogTypeConsume, ModelName: "gpt-5.1"}, 0, 10)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), total)
 
 	// With routing disabled, the old virtual name is an ordinary model name.
 	useAutoRoutingSettings(t, false, "auto")
-	_, total, err = GetAllLogs(LogTypeConsume, 0, 0, "auto", "", "", 0, 10, 0, "", "", "")
+	_, total, err = GetAllLogs(LogFilter{Type: LogTypeConsume, ModelName: "auto"}, 0, 10)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), total)
 }
@@ -93,7 +93,7 @@ func TestGetUserLogsRequestedModelFilterMatchesRoutedLogs(t *testing.T) {
 	setupLogFilterTestDB(t)
 	useAutoRoutingSettings(t, true, "smart")
 
-	logs, total, err := GetUserLogs(1, LogTypeConsume, 0, 0, "smart", "", 0, 10, "", "", "")
+	logs, total, err := GetUserLogs(1, LogFilter{Type: LogTypeConsume, ModelName: "smart"}, 0, 10)
 	require.NoError(t, err)
 	require.Equal(t, int64(1), total)
 	assert.Equal(t, "claude-sonnet-4.5", logs[0].ModelName)
