@@ -7,6 +7,7 @@ import (
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/logger"
+	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/QuantumNous/new-api/types"
 
 	"github.com/gin-gonic/gin"
@@ -26,6 +27,25 @@ func applyExplicitLogTextFilter(tx *gorm.DB, column string, value string) (*gorm
 		return tx.Where(condition, pattern), nil
 	}
 	return tx.Where(column+" = ?", value), nil
+}
+
+// SmartRoutingModelFilter selects usage logs whose requested virtual model was resolved by smart routing.
+const SmartRoutingModelFilter = "smart:routed"
+
+// applyLogModelFilter preserves exact matching for ordinary models while allowing
+// the configured virtual model (or explicit sentinel) to select routed logs.
+func applyLogModelFilter(tx *gorm.DB, value string) (*gorm.DB, error) {
+	if value == "" {
+		return tx, nil
+	}
+	virtualName := ""
+	if setting := operation_setting.GetAutoRoutingSetting(); setting.Enabled {
+		virtualName = setting.VirtualName()
+	}
+	if value == SmartRoutingModelFilter || (virtualName != "" && value == virtualName) {
+		return applyExplicitLogTextFilter(tx, "logs.other", "%\"smart_routing\":%")
+	}
+	return applyExplicitLogTextFilter(tx, "logs.model_name", value)
 }
 
 func buildLogLikeCondition(column string, value string) (string, string, error) {
@@ -493,7 +513,7 @@ func (f LogFilter) apply(tx *gorm.DB) (*gorm.DB, error) {
 	if f.Type != LogTypeUnknown {
 		tx = tx.Where("logs.type = ?", f.Type)
 	}
-	if tx, err = applyExplicitLogTextFilter(tx, "logs.model_name", f.ModelName); err != nil {
+	if tx, err = applyLogModelFilter(tx, f.ModelName); err != nil {
 		return nil, err
 	}
 	if tx, err = applyExplicitLogTextFilter(tx, "logs.username", f.Username); err != nil {

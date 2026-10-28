@@ -34,6 +34,8 @@ const (
 	MsgDistributorNoAvailableChannel           = "distributor.no_available_channel"
 	MsgDistributorNoAvailableChannelTaskPlugin = "distributor.no_available_channel_task_plugin"
 	MsgDistributorInvalidParseModel            = "distributor.invalid_request_parse_model"
+	MsgDistributorSmartRoutingUnsupportedEndpoint = "distributor.smart_routing_unsupported_endpoint"
+	MsgDistributorSmartRoutingFailed              = "distributor.smart_routing_failed"
 
 	MsgQuotaUserInsufficient             = "quota.user_insufficient"
 	MsgQuotaPreConsumeInsufficient       = "quota.pre_consume_insufficient"
@@ -48,6 +50,11 @@ const (
 	MsgRelayRetryGetChannelFailed        = "relay.retry_get_channel_failed"
 	MsgRelayRetryNoAvailableChannel      = "relay.retry_no_available_channel"
 	MsgRelayAccessTokenUnsupported       = "relay.access_token_unsupported"
+)
+
+// Pricing page related messages
+const (
+	MsgPricingSmartRoutingDescription = "pricing.smart_routing_description"
 )
 
 // Emails and the name of the token created at registration, in the

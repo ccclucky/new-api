@@ -39,6 +39,7 @@ interface ModelBadgeProps {
   modelName: string
   actualModel?: string
   responseModel?: LogOtherData['response_model']
+  smartRouting?: LogOtherData['smart_routing']
   className?: string
   wrapText?: boolean
   onInspect?: () => void
@@ -99,9 +100,13 @@ export function ModelBadge(props: ModelBadgeProps) {
           model: props.responseModel.returned_model,
         })
       : ''
-  const modelLabel = `${t('Model')}: ${props.modelName}${responseModelLabel ? `, ${responseModelLabel}` : ''}`
+  const smartRoutingLabel = props.smartRouting
+    ? `, ${t('Request Model')}: ${props.smartRouting.from}`
+    : ''
+  const modelLabel = `${t('Model')}: ${props.modelName}${responseModelLabel ? `, ${responseModelLabel}` : ''}${smartRoutingLabel}`
   const hasDetails =
     !!props.actualModel ||
+    !!props.smartRouting ||
     !!(
       props.responseModel &&
       (mismatch ||
@@ -146,6 +151,14 @@ export function ModelBadge(props: ModelBadgeProps) {
           aria-hidden='true'
         />
       )}
+      {props.smartRouting && (
+        <StatusBadge
+          icon={Route}
+          label={t('Auto')}
+          variant='info'
+          copyable={false}
+        />
+      )}
     </>
   )
 
@@ -163,6 +176,33 @@ export function ModelBadge(props: ModelBadgeProps) {
     )
   }
 
+  let popoverContent = (
+    <div className='space-y-2'>
+      <div className='flex items-start justify-between gap-3'>
+        <span className='text-muted-foreground text-xs'>
+          {t('Request Model:')}
+        </span>
+        <span className='truncate font-mono text-xs font-medium'>
+          {props.modelName}
+        </span>
+      </div>
+      <div className='flex items-start justify-between gap-3'>
+        <span className='text-muted-foreground text-xs'>
+          {t('Actual Model:')}
+        </span>
+        <span className='truncate font-mono text-xs font-medium'>
+          {props.actualModel}
+        </span>
+      </div>
+    </div>
+  )
+  if (props.smartRouting) {
+    popoverContent = <SmartRoutingDetails summary={props.smartRouting} />
+  }
+  if (props.responseModel) {
+    popoverContent = <ResponseModelDetails observation={props.responseModel} />
+  }
+
   return (
     <Popover>
       <PopoverTrigger
@@ -177,30 +217,25 @@ export function ModelBadge(props: ModelBadgeProps) {
         {content}
       </PopoverTrigger>
       <PopoverContent className='w-96 max-w-[calc(100vw-2rem)]'>
-        {props.responseModel ? (
-          <ResponseModelDetails observation={props.responseModel} />
-        ) : (
-          <div className='space-y-2'>
-            <div className='flex items-start justify-between gap-3'>
-              <span className='text-muted-foreground text-xs'>
-                {t('Request Model:')}
-              </span>
-              <span className='truncate font-mono text-xs font-medium'>
-                {props.modelName}
-              </span>
-            </div>
-            <div className='flex items-start justify-between gap-3'>
-              <span className='text-muted-foreground text-xs'>
-                {t('Actual Model:')}
-              </span>
-              <span className='truncate font-mono text-xs font-medium'>
-                {props.actualModel}
-              </span>
-            </div>
-          </div>
-        )}
+        {popoverContent}
       </PopoverContent>
     </Popover>
+  )
+}
+
+export function SmartRoutingDetails(props: {
+  summary: NonNullable<LogOtherData['smart_routing']>
+}) {
+  const { t } = useTranslation()
+  return (
+    <div className='min-w-0 space-y-2'>
+      <DetailRow label={t('Request Model')} value={props.summary.from} mono />
+      <DetailRow label={t('Actual Model')} value={props.summary.to} mono />
+      <DetailRow
+        label={t('Selected by')}
+        value={props.summary.by === 'jev' ? t('Decision model') : t('Fallback')}
+      />
+    </div>
   )
 }
 
